@@ -1,0 +1,11 @@
+# Environment variables file
+.env
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Playwright state/downloads (optional but good practice)
+.state/
+browser/ 

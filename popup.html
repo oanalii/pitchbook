@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PitchBook Scraper</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+    #progress {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>PitchBook Scraper</h2>
+  
+  <button id="startScraping">Start Scraping</button>
+  <button id="stopScraping" disabled>Stop Scraping</button>
+  <button id="downloadCSV">Download CSV</button>
+  
+  <div id="progress">
+    Pages scraped: <span id="pageCount">0</span>
+    Rows collected: <span id="rowCount">0</span>
+  </div>
+  
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 
