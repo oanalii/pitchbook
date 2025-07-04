@@ -191,37 +191,51 @@ async function scrapeCurrentPage() {
         
         debugLog(`[scrapeCurrentPage] Found ${fixedRowCount} fixed rows and ${scrollableRowCount} scrollable rows`);
         
-        // Handle row mismatch - use the minimum count
-        let rowCountToProcess = 0;
-        if (fixedRowCount !== scrollableRowCount) {
-             debugLog(`[scrapeCurrentPage] Warning: Row count mismatch! Fixed=${fixedRowCount}, Scrollable=${scrollableRowCount}. Processing the minimum (${Math.min(fixedRowCount, scrollableRowCount)}) rows.`);
-             rowCountToProcess = Math.min(fixedRowCount, scrollableRowCount);
-        } else if (fixedRowCount === 0) {
-            throw new Error('No rows found in either table section.');
-        } else {
-            rowCountToProcess = fixedRowCount; // Counts match and are > 0
+        // SIMPLE OFFSET DETECTION: Check if first fixed row has company link
+        let offset = 0;
+        if (fixedRowCount > 0) {
+            const firstFixedRow = fixedRows[0];
+            const firstCompanyLink = firstFixedRow.querySelector(SELECTORS.COMPANY_NAME_LINK);
+            if (!firstCompanyLink) {
+                debugLog('[scrapeCurrentPage] First fixed row has no company link - applying offset of 1');
+                offset = 1;
+            } else {
+                debugLog('[scrapeCurrentPage] First fixed row has company link - no offset needed');
+            }
         }
         
-        debugLog(`[scrapeCurrentPage] Will process ${rowCountToProcess} rows.`);
+        // Handle row mismatch - use the minimum count after applying offset
+        const availableFixedRows = fixedRowCount - offset;
+        let rowCountToProcess = 0;
+        if (availableFixedRows !== scrollableRowCount) {
+             debugLog(`[scrapeCurrentPage] Warning: Row count mismatch! Available Fixed=${availableFixedRows}, Scrollable=${scrollableRowCount}. Processing minimum.`);
+             rowCountToProcess = Math.min(availableFixedRows, scrollableRowCount);
+        } else if (availableFixedRows === 0) {
+            throw new Error('No rows available after applying offset.');
+        } else {
+            rowCountToProcess = availableFixedRows;
+        }
+        
+        debugLog(`[scrapeCurrentPage] Will process ${rowCountToProcess} rows with offset ${offset}.`);
         
         const rows = [];
         
-        // Process each row up to the minimum count found
+        // Process each row with offset
         for (let i = 0; i < rowCountToProcess; i++) {
             const rowData = {};
+            const fixedRowIndex = i + offset;  // Apply offset to fixed rows
             
             // 1. Get company name & URL from fixed section
-            const companyLink = fixedRows[i].querySelector(SELECTORS.COMPANY_NAME_LINK);
+            const companyLink = fixedRows[fixedRowIndex].querySelector(SELECTORS.COMPANY_NAME_LINK);
             if (companyLink) {
                 rowData['Company Name'] = companyLink.textContent.trim();
                 rowData['Company URL'] = companyLink.href;
             } else {
-                debugLog(`[scrapeCurrentPage] Warning: Company link not found in fixed row ${i}. Skipping row.`);
+                debugLog(`[scrapeCurrentPage] Warning: Company link not found in fixed row ${fixedRowIndex}. Skipping row.`);
                 continue; 
             }
             
             // 2. Get other data from corresponding scrollable section row
-            // Ensure scrollableRows[i] exists before querying inside it
             if (scrollableRows[i]) { 
                 const scrollableCells = scrollableRows[i].querySelectorAll(SELECTORS.DATA_CELL);
                 scrollableCells.forEach((cell, idx) => {
@@ -233,19 +247,16 @@ async function scrapeCurrentPage() {
                     }
                 });
             } else {
-                // This case should ideally not happen if we iterate to min count, but good to log
                 debugLog(`[scrapeCurrentPage] Warning: Corresponding scrollable row ${i} not found, skipping its data.`);
             }
             
             rows.push(rowData);
-            // debugLog(`[scrapeCurrentPage] Processed row ${i + 1}:`, Object.keys(rowData).length, 'columns');
         }
         
         if (rows.length === 0 && rowCountToProcess > 0) {
-            // This might indicate an issue with finding company links or other data extraction
-             debugLog('[scrapeCurrentPage] Warning: Processed rows but extracted no data. Check selectors inside rows.');
+             debugLog('[scrapeCurrentPage] Warning: Processed rows but extracted no data. Check selectors.');
         } else if (rows.length === 0) {
-             throw new Error('No data successfully extracted from any rows (and row count was 0)');
+             throw new Error('No data successfully extracted from any rows');
         }
         
         debugLog(`[scrapeCurrentPage] Successfully scraped ${rows.length} rows.`);
